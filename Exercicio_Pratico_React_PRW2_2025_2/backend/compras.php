@@ -56,7 +56,7 @@ if (method("DELETE")) {
             throw new Exception("Usuário não comprou o item", 400);
         }
         if (!Compras::remove($_GET["id_produto"], $_GET["id_usuario"])) {
-            throw new Exception("Compra não pôde ser inserida", 500);
+            throw new Exception("Compra não pôde ser removida", 500);
         }
         output(200, ["msg" => "Compra removida com sucesso"]);
     } catch (Exception $e) {

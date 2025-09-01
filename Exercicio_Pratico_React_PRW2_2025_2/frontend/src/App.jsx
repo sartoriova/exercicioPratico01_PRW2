@@ -1,13 +1,27 @@
 import "./App.css";
 import axios from "axios";
+import { useState, useEffect } from 'react';
 import ProductsList from "./ProductsList";
 import UsersList from "./UsersList";
-import { useState } from 'react';
 import ProductRegister from "./ProductRegister";
+import UserRegister from "./UserRegister";
+import PurchaseRegister from "./PurchaseRegister";
+import { ProductContext } from "./ProductContext";
+import { UserContext } from "./UserContext";
 
 function App() {
   const [users, setUsers] = useState([]);
+
   const [products, setProducts] = useState([]);
+  const [editingProduct, setEditingProduct] = useState(false);
+  const [duplicateProduct, setDuplicateProduct] = useState(false);
+  const [product, setProduct] = useState({
+    nome: "",
+    preco: "",
+  });
+
+  const [duplicatePurchase, setDuplicatePurchase] = useState(false);
+
   const api = axios.create({
     baseURL: "http://localhost:3000"
   });
@@ -30,6 +44,29 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    loadUsers();
+    loadProducts();
+  }, []);
+
+  async function registerUser(newUser) {
+    try {
+      await api.post("/usuarios", newUser);
+      await loadUsers();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function removeUser(e) {
+    try {
+      await api.delete(`/usuarios/${e.target.id}`);
+      await loadUsers();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   function calculateTotal(idUser) {
     let soma = 0;
 
@@ -40,12 +77,70 @@ function App() {
     return soma;
   }
 
-  if (users.length == 0) {
-    loadUsers();
+  async function registerProduct() {
+    try {
+      await api.post("/produtos", product);
+      await loadProducts();
+      await loadUsers();
+
+      if (duplicateProduct) {
+        setDuplicateProduct(false);
+      }
+    } catch (error) {
+      if (error.response.status == 400) {
+        setDuplicateProduct(true);
+      }
+    }
   }
 
-  if (products.length == 0) {
-    loadProducts();
+  async function editProduct() {
+    try {
+      await api.put(`/produtos/${product.id}`, product);
+      await loadProducts();
+      await loadUsers();
+
+      if (duplicateProduct) {
+        setDuplicateProduct(false);
+      }
+    } catch (error) {
+      if (error.response.status == 400) {
+        setDuplicateProduct(true);
+      }
+    }
+  }
+
+  async function removeProduct(e) {
+    try {
+      await api.delete(`/produtos/${e.target.id}`);
+      await loadProducts();
+      await loadUsers();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function registerPurchase(newPurchase) {
+    try {
+      await api.post("/compras", newPurchase);
+      await loadUsers();
+
+      if (duplicatePurchase) {
+        setDuplicatePurchase(false);
+      }
+    } catch (error) {
+      if (error.response.status == 400) {
+        setDuplicatePurchase(true);
+      }
+    }
+  }
+
+  async function removePurchaseUser(e) {
+    try {
+      await api.delete(`/compras/${e.target.parentElement.id}/${e.target.id}`);
+      await loadUsers();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return (
@@ -53,53 +148,38 @@ function App() {
       <h1 className="p-3 text-center">Lista de compras por usuário</h1>
       <div className="container">
         <div className="row">
+
           <div className="col p-1">
             <h2 className="mt-4">Cadastrar pessoa</h2>
-            <form id="formPessoas" className="row g-3">
-              <div className="col-12 nomePessoa">
-                <label htmlFor="inputNome" className="form-label">Nome</label>
-                <input type="text" className="form-control" id="inputNome" placeholder="Digite o nome"
-                  required />
-              </div>
-              <div className="col-12">
-                <button type="submit" className="btn btn-primary">Cadastrar</button>
-              </div>
-            </form>
-            <h2 className="mt-4">Comprar produto</h2>
-            <form id="formCompra" className="row g-3">
-              <div className="col-12 comprarProduto">
-                <fieldset>
-                  <label htmlFor="pessoaSelecionado" className="form-label pt-2">Pessoa</label>
-                  <select id="pessoaSelecionado" className="form-select">
-                    <option value="0">Selecione uma pessoa</option>
-                  </select>
-                  <label htmlFor="produtoSelecionado" className="form-label pt-2">Produto</label>
-                  <select id="produtoSelecionado" className="form-select">
-                    <option value="0">Selecione um produto</option>
-                  </select>
-                </fieldset>
-              </div>
-              <div className="col-12">
-                <button type="submit" className="btn btn-primary">Comprar</button>
-              </div>
-            </form>
-            <h2 className="display-6 text-center mt-4">Lista de Pessoas</h2>
-            <UsersList users={users} calculateTotal={calculateTotal}></UsersList>
+            <UserRegister registerUser={registerUser}></UserRegister>
 
+            <h2 className="mt-4">Comprar produto</h2>
+            <PurchaseRegister users={users} products={products} registerPurchase={registerPurchase}></PurchaseRegister>
+            <p hidden={!duplicatePurchase} className="error">Usuário já comprou o item!</p>
+
+            <h2 className="display-6 text-center mt-4">Lista de Pessoas</h2>
+            <UserContext.Provider value={{removeUser, removePurchaseUser}}>
+              <UsersList users={users} calculateTotal={calculateTotal}></UsersList>
+            </UserContext.Provider>
           </div>
+
           <div className="col-2"></div>
+
           <div className="col p-1">
-            <h2 className="mt-4">Cadastrar produto</h2>
-            <ProductRegister products={products} setProducts={setProducts}></ProductRegister>
+            <h2 className="mt-4">{!editingProduct ? "Cadastrar" : "Editar"} produto</h2>
+            <ProductRegister product={product} setProduct={setProduct} editingProduct={editingProduct} setEditingProduct={setEditingProduct} registerProduct={registerProduct} editProduct={editProduct}></ProductRegister>
+            <p hidden={!duplicateProduct} className="error">Nome de produto duplicado!</p>
 
             <h2 className="display-6 text-center mt-4">Lista de Produtos</h2>
-            <ProductsList products={products}></ProductsList>
+            <ProductContext.Provider value={{ setProduct, setEditingProduct, removeProduct }}>
+              <ProductsList products={products}></ProductsList>
+            </ProductContext.Provider>
           </div>
-        </div>
 
+        </div>
       </div>
     </>
   )
 }
 
-export default App
+export default App;

@@ -22,6 +22,8 @@ function App() {
 
   const [duplicatePurchase, setDuplicatePurchase] = useState(false);
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const api = axios.create({
     baseURL: "http://localhost:3000"
   });
@@ -31,7 +33,13 @@ function App() {
       let res = await api.get("/usuarios");
       setUsers(res.data);
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -40,7 +48,13 @@ function App() {
       let res = await api.get("/produtos");
       setProducts(res.data);
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -54,7 +68,13 @@ function App() {
       await api.post("/usuarios", newUser);
       await loadUsers();
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -63,7 +83,13 @@ function App() {
       await api.delete(`/usuarios/${e.target.id}`);
       await loadUsers();
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -87,8 +113,17 @@ function App() {
         setDuplicateProduct(false);
       }
     } catch (error) {
-      if (error.response.status == 400) {
-        setDuplicateProduct(true);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+
+        if (error.response.status == 400) {
+          setDuplicateProduct(true);
+          setErrorMessage(error.response.data.msg);
+        }
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
       }
     }
   }
@@ -103,8 +138,17 @@ function App() {
         setDuplicateProduct(false);
       }
     } catch (error) {
-      if (error.response.status == 400) {
-        setDuplicateProduct(true);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+
+        if (error.response.status == 400) {
+          setDuplicateProduct(true);
+          setErrorMessage(error.response.data.msg);
+        }
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
       }
     }
   }
@@ -115,7 +159,13 @@ function App() {
       await loadProducts();
       await loadUsers();
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -128,8 +178,17 @@ function App() {
         setDuplicatePurchase(false);
       }
     } catch (error) {
-      if (error.response.status == 400) {
-        setDuplicatePurchase(true);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+
+        if (error.response.status == 400) {
+          setDuplicatePurchase(true);
+          setErrorMessage(error.response.data.msg);
+        }
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
       }
     }
   }
@@ -139,7 +198,13 @@ function App() {
       await api.delete(`/compras/${e.target.parentElement.id}/${e.target.id}`);
       await loadUsers();
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.log("Erro de requisição: ", error.response.status);
+      } else if (error.request) {
+        console.log("Timeout");
+      } else {
+        console.error("Erro inesperado: ", error.message);
+      }
     }
   }
 
@@ -155,10 +220,10 @@ function App() {
 
             <h2 className="mt-4">Comprar produto</h2>
             <PurchaseRegister users={users} products={products} registerPurchase={registerPurchase}></PurchaseRegister>
-            <p hidden={!duplicatePurchase} className="error">Usuário já comprou o item!</p>
+            <p hidden={!duplicatePurchase} className="error">{errorMessage}</p>
 
             <h2 className="display-6 text-center mt-4">Lista de Pessoas</h2>
-            <UserContext.Provider value={{removeUser, removePurchaseUser}}>
+            <UserContext.Provider value={{ removeUser, removePurchaseUser }}>
               <UsersList users={users} calculateTotal={calculateTotal}></UsersList>
             </UserContext.Provider>
           </div>
@@ -168,7 +233,8 @@ function App() {
           <div className="col p-1">
             <h2 className="mt-4">{!editingProduct ? "Cadastrar" : "Editar"} produto</h2>
             <ProductRegister product={product} setProduct={setProduct} editingProduct={editingProduct} setEditingProduct={setEditingProduct} registerProduct={registerProduct} editProduct={editProduct}></ProductRegister>
-            <p hidden={!duplicateProduct} className="error">Nome de produto duplicado!</p>
+            <p hidden={!duplicateProduct} className="error">{errorMessage
+            }</p>
 
             <h2 className="display-6 text-center mt-4">Lista de Produtos</h2>
             <ProductContext.Provider value={{ setProduct, setEditingProduct, removeProduct }}>

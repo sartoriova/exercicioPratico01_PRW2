@@ -11,6 +11,7 @@ import { UserContext } from "./UserContext";
 
 function App() {
   const [users, setUsers] = useState([]);
+  const [invalidName, setInvalidName] = useState("");
 
   const [products, setProducts] = useState([]);
   const [editingProduct, setEditingProduct] = useState(false);
@@ -67,9 +68,18 @@ function App() {
     try {
       await api.post("/usuarios", newUser);
       await loadUsers();
+
+      if (invalidName) {
+        setInvalidName(false);
+      }
     } catch (error) {
       if (error.response) {
         console.log("Erro de requisição: ", error.response.status);
+
+        if (error.response.status == 400) {
+          setInvalidName(true);
+          setErrorMessage(error.response.data.msg);
+        }
       } else if (error.request) {
         console.log("Timeout");
       } else {
@@ -217,6 +227,7 @@ function App() {
           <div className="col p-1">
             <h2 className="mt-4">Cadastrar pessoa</h2>
             <UserRegister registerUser={registerUser}></UserRegister>
+            <p hidden={!invalidName} className="error">{errorMessage}</p>
 
             <h2 className="mt-4">Comprar produto</h2>
             <PurchaseRegister users={users} products={products} registerPurchase={registerPurchase}></PurchaseRegister>
